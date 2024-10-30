@@ -72,8 +72,8 @@ public:
 	CharacterClass();
 	~CharacterClass();
 	void setCharacterClass(char* pName, Specialization spec,double health, double stamina, double mana, int spellCells, double damage );
+	void ClassCreation();
 	
-
 
 };
 
@@ -116,6 +116,7 @@ public:
 	void ShowInventory();
 	void AddToInventory(Item item);
 	void PlayerDamaged(double damage);
+	void SetStartItem();
 };
 
 
@@ -139,52 +140,39 @@ public:
 
 };
 
+
+class PlayableCharacterManager {
+private:
+	PlayableCharacter* characters;
+	size_t size;
+	size_t capacity;
+	void resize();
+public:
+	PlayableCharacterManager();
+	~PlayableCharacterManager();
+	void addCharacter(PlayableCharacter& character);
+	void removeCharacter(size_t index);
+	PlayableCharacter getCharacter(size_t index);
+	size_t getSize();
+};
+
+
 int main()
 {
 	setlocale(LC_ALL, "Rus");
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
+	PlayableCharacterManager saves;
 	PlayableCharacter Hero;
+	Hero.Type.ClassCreation();
+	saves.addCharacter(Hero);
 
 	cout << "Просмотр статистики после создания"<<endl;
 	
 	Hero.PrintStats();
 	Hero.inventory;
 
-	//создание базовых предметов
-	Item key;
-	key.setItem(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
-	Hero.AddToInventory(key);
-
-	Item healthPotion;
-	healthPotion.setItem(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
-	Hero.AddToInventory(healthPotion);
-
-	//распределение вещей в зависимости от "специализации"
-	if (Hero.Type.specialization == Warrior) {
-		Item PalladinSword;
-		PalladinSword.setItem(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
-		Item PalladinArmor;
-		PalladinArmor.setItem(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
-		Hero.AddToInventory(PalladinSword);
-		Hero.AddToInventory(PalladinArmor);
-	}
-	if (Hero.Type.specialization == Hunter) {
-		Item AssassinDagger;
-		AssassinDagger.setItem(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
-		Item HuntersBow;
-		HuntersBow.setItem(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
-		Item HuntersKilt;
-		HuntersKilt.setItem(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
-		Hero.AddToInventory(AssassinDagger); Hero.AddToInventory(HuntersBow); Hero.AddToInventory(HuntersKilt);
-	}
-	if (Hero.Type.specialization == Sorcerer) {
-		Item BasedStuff;
-		Item SorcerersRobe;
-		BasedStuff.setItem(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
-		SorcerersRobe.setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
-		Hero.AddToInventory(BasedStuff); Hero.AddToInventory(SorcerersRobe);
-	}
+	Hero.SetStartItem();
 
 	
 	cout << "Просмотр инвентаря" <<endl ;
@@ -215,17 +203,48 @@ int main()
 	Hero.PrintStats();
 	cout << "Просмотр послебоевого инвентаря" << endl;
 	Hero.ShowInventory();
+
+	PlayableCharacter hero2;
+	hero2.Type.ClassCreation();
+	hero2.inventory;
+	hero2.SetStartItem();
+	saves.addCharacter(hero2);
+	cout << "Количество персонажей: " << saves.getSize() << endl;
+
+	for (size_t i = 0; i < saves.getSize(); ++i) {
+		cout<< saves.getCharacter(i).Type.name<<endl;
+	}
+
+	cout << "Введите номер персонажа для вывода статистики:\nВсего персонажей:"<<saves.getSize()<<endl;
+	int choise;
+	do {
+		cin >> choise;
+		while (getchar() != '\n');
+	} while (choise<0||choise>saves.getSize());
+	choise--;
+	saves.getCharacter(choise).PrintStats();
+	saves.getCharacter(choise).ShowInventory();
+
+	delete[] Hero.Type.name;
+	delete[] hero2.Type.name;
 	
 }
 
 CharacterClass::CharacterClass() {
+	
+}
+
+
+void CharacterClass::ClassCreation() {
 	int PlayerType;
 	puts("Введите имя:");
-	char* Name = (char*)malloc(30 * sizeof(char));
+	char* Name;
+	Name = new char[30];
 	fgets(Name, 30, stdin);
-	puts("Выберете класс персонажа: 1)Воин 2)Охотник 3)Колдун");
+	cout << "Выберете класс персонажа: 1)Воин 2)Охотник 3)Колдун" << endl;
 	do {
-		cin>>PlayerType;
+		cin >> PlayerType;
+		while (getchar() != '\n');
 	} while (PlayerType < 1 || PlayerType>3);
 	Specialization spec = (Specialization)PlayerType;
 	double health;
@@ -239,7 +258,7 @@ CharacterClass::CharacterClass() {
 		damage = 20;
 		health = 100;
 		mana = 5;
-		stamina= 50;
+		stamina = 50;
 		spellCells = 0;
 		break;
 	case(2):
@@ -259,8 +278,9 @@ CharacterClass::CharacterClass() {
 	default:
 		break;
 	}
-	setCharacterClass(Name,spec,health, stamina,mana,spellCells,damage);
+	setCharacterClass(Name, spec, health, stamina, mana, spellCells, damage);
 }
+
 
 void CharacterClass::setCharacterClass(char* pName, Specialization spec, double health, double stamina, double mana, int spellCells, double damage) {
 	name = pName;
@@ -380,6 +400,7 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 			int ch;
 			do {
 				cin>>ch;
+				while (getchar() != '\n');
 			} while (ch < 1 || ch>2);
 			if (ch == 1) {
 				Character.AddToInventory(item);
@@ -390,6 +411,92 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 			cout<< Name<<"НИЧЕГО не выронил"<<endl;
 			return ;
 		}
+	}
+
+}
+
+PlayableCharacterManager::PlayableCharacterManager() {
+	size = 0;
+	capacity = 10;
+	characters = new PlayableCharacter[capacity];
+}
+
+PlayableCharacterManager::~PlayableCharacterManager() {
+	delete[] characters;
+
+}
+
+void PlayableCharacterManager::resize() {
+	capacity *= 2;
+	PlayableCharacter* newCharacters = new PlayableCharacter[capacity];
+	for (size_t i = 0; i < size; ++i) {
+		newCharacters[i] = characters[i]; // копируем существующие элементы
+	}
+	delete[] characters;
+	characters = newCharacters;
+}
+
+void PlayableCharacterManager::addCharacter(PlayableCharacter& character) {
+
+	if (size == capacity) {
+		resize();
+	}
+	characters[size++] = character;
+}
+
+void PlayableCharacterManager::removeCharacter(size_t index) {
+	if (index < size) {
+		// перемещаем последний элемент на место удаляемого
+		characters[index] = characters[size - 1];
+		size--;
+	}
+}
+
+PlayableCharacter PlayableCharacterManager::getCharacter(size_t index) {
+	if (index < size) {
+		return characters[index];
+	}
+	throw std::out_of_range("Index out of range");
+}
+
+size_t PlayableCharacterManager::getSize(){
+	return size;
+}
+
+void PlayableCharacter::SetStartItem() {
+	//создание базовых предметов
+	Item key;
+	key.setItem(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
+	this->AddToInventory(key);
+
+	Item healthPotion;
+	healthPotion.setItem(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
+	this->AddToInventory(healthPotion);
+
+	//распределение вещей в зависимости от "специализации"
+	if (this->Type.specialization == Warrior) {
+		Item PalladinSword;
+		PalladinSword.setItem(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
+		Item PalladinArmor;
+		PalladinArmor.setItem(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
+		this->AddToInventory(PalladinSword);
+		this->AddToInventory(PalladinArmor);
+	}
+	if (this->Type.specialization == Hunter) {
+		Item AssassinDagger;
+		AssassinDagger.setItem(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
+		Item HuntersBow;
+		HuntersBow.setItem(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
+		Item HuntersKilt;
+		HuntersKilt.setItem(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
+		this->AddToInventory(AssassinDagger); this->AddToInventory(HuntersBow); this->AddToInventory(HuntersKilt);
+	}
+	if (this->Type.specialization == Sorcerer) {
+		Item BasedStuff;
+		Item SorcerersRobe;
+		BasedStuff.setItem(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
+		SorcerersRobe.setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
+		this->AddToInventory(BasedStuff); this->AddToInventory(SorcerersRobe);
 	}
 
 }
