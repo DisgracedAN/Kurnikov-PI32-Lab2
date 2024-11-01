@@ -199,6 +199,7 @@ int main()
 	} while (Gobbo.HealthBar != 0||Hero.Type.HealthBar!=0);
 
 	Gobbo.EntityDied(Hero, *money);
+	delete money;
 
 	cout << "Просмотр послебоевой статистики" <<endl ;
 	Hero.PrintStats();
@@ -526,7 +527,5 @@ void PlayableCharacterManager::update(PlayableCharacter* hero) {
 			return;
 		}
 	}
-
-
 
 }
