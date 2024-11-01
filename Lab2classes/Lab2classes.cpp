@@ -186,8 +186,8 @@ int main()
 	Gobbo.printEntity();
 
 	//создание предмета для выпадения
-	Item money;
-	money.setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 40);
+	Item *money = new Item();
+	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 40);
 
 
 	//процесс боя
@@ -198,7 +198,7 @@ int main()
 		if (Hero.Type.HealthBar <= 0) break;
 	} while (Gobbo.HealthBar != 0||Hero.Type.HealthBar!=0);
 
-	Gobbo.EntityDied(Hero, money);
+	Gobbo.EntityDied(Hero, *money);
 
 	cout << "Просмотр послебоевой статистики" <<endl ;
 	Hero.PrintStats();
@@ -231,9 +231,6 @@ int main()
 	PlayableCharacter character = saves.getCharacter(choise);
 	character.PrintStats();
 	character.ShowInventory();
-
-	delete[] Hero.Type.name;
-	delete[] hero2.Type.name;
 	
 }
 
@@ -309,7 +306,9 @@ void PlayableCharacter::PrintStats() {
 	cout << "ОМ: " << Type.ManaPoints << endl;
 }
 
-CharacterClass::~CharacterClass() {}
+CharacterClass::~CharacterClass() {
+
+}
 
 Item::Item() {
 	DropChance = 0;
@@ -321,13 +320,17 @@ void Item::setItem(ItemType itemtype, const char* name, const char* desc, int dr
 	Description = _strdup(desc);
 	DropChance = dropchance;
 }
-Item::~Item() {}
+Item::~Item() {
+	
+}
 
 Inventory::Inventory() {
 	ActiveSlots = 0;
 }
 
-Inventory::~Inventory() {}
+Inventory::~Inventory() {
+	
+}
 
 void PlayableCharacter::AddToInventory(Item item) {
 	if (inventory.ActiveSlots < 100) {
@@ -415,7 +418,7 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 			else return ;
 		}
 		else {
-			cout<< Name<<"НИЧЕГО не выронил"<<endl;
+			cout<< Name<<" НИЧЕГО не выронил"<<endl;
 			return ;
 		}
 	}
@@ -472,39 +475,47 @@ size_t PlayableCharacterManager::getSize(){
 
 void PlayableCharacter::SetStartItem() {
 	//создание базовых предметов
-	Item key;
-	key.setItem(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
-	this->AddToInventory(key);
+	Item *key= new Item();
+	key->setItem(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
+	this->AddToInventory(*key);
 
-	Item healthPotion;
-	healthPotion.setItem(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
-	this->AddToInventory(healthPotion);
+	Item *healthPotion=new Item();
+	healthPotion->setItem(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
+	this->AddToInventory(*healthPotion);
 
 	//распределение вещей в зависимости от "специализации"
 	if (this->Type.specialization == Warrior) {
-		Item PalladinSword;
-		PalladinSword.setItem(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
-		Item PalladinArmor;
-		PalladinArmor.setItem(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
-		this->AddToInventory(PalladinSword);
-		this->AddToInventory(PalladinArmor);
+		Item *PalladinSword=new Item();
+		PalladinSword->setItem(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
+		Item *PalladinArmor = new Item();
+		PalladinArmor->setItem(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
+		this->AddToInventory(*PalladinSword);
+		this->AddToInventory(*PalladinArmor);
+		delete PalladinSword;
+		delete PalladinArmor;
 	}
 	if (this->Type.specialization == Hunter) {
-		Item AssassinDagger;
-		AssassinDagger.setItem(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
-		Item HuntersBow;
-		HuntersBow.setItem(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
-		Item HuntersKilt;
-		HuntersKilt.setItem(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
-		this->AddToInventory(AssassinDagger); this->AddToInventory(HuntersBow); this->AddToInventory(HuntersKilt);
+		Item *AssassinDagger = new Item();
+		AssassinDagger->setItem(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
+		Item *HuntersBow = new Item();
+		HuntersBow->setItem(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
+		Item *HuntersKilt = new Item();
+		HuntersKilt->setItem(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
+		this->AddToInventory(*AssassinDagger); this->AddToInventory(*HuntersBow); this->AddToInventory(*HuntersKilt);
+		delete AssassinDagger; delete HuntersBow; delete HuntersKilt;
 	}
 	if (this->Type.specialization == Sorcerer) {
-		Item BasedStuff;
-		Item SorcerersRobe;
-		BasedStuff.setItem(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
-		SorcerersRobe.setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
-		this->AddToInventory(BasedStuff); this->AddToInventory(SorcerersRobe);
+		Item *BasedStuff = new Item();
+		Item *SorcerersRobe = new Item();
+		BasedStuff->setItem(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
+		SorcerersRobe->setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
+		this->AddToInventory(*BasedStuff); this->AddToInventory(*SorcerersRobe);
+		delete BasedStuff; delete SorcerersRobe;
 	}
+	delete key;
+	delete healthPotion;
+	
+
 
 }
 
