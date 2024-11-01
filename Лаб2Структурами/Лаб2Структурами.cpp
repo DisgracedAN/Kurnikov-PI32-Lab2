@@ -1,6 +1,4 @@
 ﻿// Лаб2Структурами.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
 #define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
 #include<string.h>
@@ -105,6 +103,13 @@ struct PlayableCharacter
 
 };
 
+struct PlayableCharacterManager
+{
+	PlayableCharacter* characters;
+	size_t size;
+	size_t capacity;
+};
+
 
 CharacterClass PlayerClassCreate();//Создать класс(Имя и тд)
 void PlayerInventoryCreate();//Создать инвентарь
@@ -119,7 +124,27 @@ Entity AttackEntity(PlayableCharacter *Character, Entity *entity);//Нанесе
 PlayableCharacter PlayerDamaged(PlayableCharacter* Character, double damage);//Получение урона игроком
 int EntityDied(Entity* entity,PlayableCharacter *Character, Item *item);//Смерть NPC и выпадение предмета
 
+void freePlayerManager(PlayableCharacterManager *manager);
 
+PlayableCharacterManager setManager(PlayableCharacterManager* manager);
+
+
+PlayableCharacterManager resize(PlayableCharacterManager* manager);
+
+PlayableCharacterManager addCharacter(PlayableCharacterManager* manager, PlayableCharacter *hero);
+
+PlayableCharacterManager removeCharacter(PlayableCharacterManager* manager, size_t index);
+
+
+PlayableCharacter getCharacter(PlayableCharacterManager* manager, size_t index);
+
+size_t getSize(PlayableCharacterManager* manager);
+
+
+PlayableCharacter SetStartItem(PlayableCharacter* hero);
+
+
+PlayableCharacterManager update(PlayableCharacterManager* manager, PlayableCharacter* hero);
 
 int main()
 {
@@ -131,38 +156,14 @@ int main()
 	PlayableCharacter Hero;
 	CharacterClass player=PlayerClassCreate();
 	Hero = PlayerCharacterSet(player);
-	//Создание предметов и внесение их в инвентарь
-	Item key = ItemCreate(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
-	AddToInventory(&Hero, key);
-	
-	Item healthPotion = ItemCreate(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
-	AddToInventory(&Hero, healthPotion);
-	
 
-	//Создание предметов и внесение их в инвентарь в зависимости от класса игрока
+	SetStartItem(&Hero);
 
-	switch (Hero.type.specialization) {
-	case(Warrior):
-		Item PalladinSword = ItemCreate(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
-		AddToInventory(&Hero, PalladinSword);
-		Item PalladinArmor = ItemCreate(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
-		AddToInventory(&Hero, PalladinArmor);
-		break;
-	case(Hunter):
-		Item AssassinDagger = ItemCreate(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
-		AddToInventory(&Hero, AssassinDagger);
-		Item HuntersBow = ItemCreate(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
-		AddToInventory(&Hero, HuntersBow);
-		Item HuntersKilt = ItemCreate(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
-		AddToInventory(&Hero, HuntersKilt);
-		break;
-	case(Sorcerer):
-		Item BasedStaff = ItemCreate(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
-		AddToInventory(&Hero, BasedStaff);
-		Item SorcerersRobe = ItemCreate(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
-		AddToInventory(&Hero, SorcerersRobe);
-		break;
-	}
+	PlayableCharacterManager saves;
+	setManager(&saves);
+
+	addCharacter(&saves, &Hero);
+
 	//Вывод статистки
 	PlayerOutput(Hero);
 	puts("");
@@ -192,7 +193,44 @@ int main()
 	puts("\nПросмотр инвентаря после боя\n");
 
 	ShowInventory(&Hero);
+	update(&saves, &Hero);
 
+	PlayableCharacter hero2;
+	
+
+	CharacterClass player2 = PlayerClassCreate();
+
+	hero2 = PlayerCharacterSet(player2);
+
+	SetStartItem(&hero2);
+
+	addCharacter(&saves, &hero2);
+
+
+	printf("Количество персонажей: %d\n", (int*)getSize(&saves));
+
+	for (size_t i = 0; i < getSize(&saves); ++i) {
+		printf("%s\n",getCharacter(&saves, i).type.name);
+	}
+
+	printf("Введите номер персонажа для вывода статистики\nВсего персонажей: %d\n", getSize(&saves));
+	int choise;
+
+	do {
+		scanf("%d", &choise);
+		while (getchar() != '\n');
+
+	} while (choise<1||choise>getSize(&saves));
+	
+
+	choise--;
+
+	PlayableCharacter character = getCharacter(&saves, choise);
+	PlayerOutput(character);
+	ShowInventory(&character);
+
+	freeInventory(&Hero);
+	freePlayerManager(&saves);
 }
 
 
@@ -205,6 +243,7 @@ CharacterClass PlayerClassCreate() {
 	puts("Выберете класс персонажа: 1)Воин 2)Охотник 3)Колдун");
 	do {
 		scanf("%d", &PlayerType);
+		while (getchar() != '\n');
 	} while (PlayerType < 1 || PlayerType>3);
 
 	CharacterClass playertype;
@@ -337,6 +376,7 @@ int EntityDied(Entity* entity, PlayableCharacter *character, Item *item) {
 			int ch;
 			do {
 				scanf("%d", &ch);
+				while (getchar() != '\n');
 			} while (ch < 1 || ch>2);
 			if (ch == 1) {
 				AddToInventory(character, *item);
@@ -349,4 +389,100 @@ int EntityDied(Entity* entity, PlayableCharacter *character, Item *item) {
 		}
 	}
 	return 0;
+}
+
+PlayableCharacterManager setManager(PlayableCharacterManager* manager) {
+	manager->size = 0;
+	manager->capacity = 10;
+	manager->characters = (PlayableCharacter*)calloc(manager->capacity, sizeof(PlayableCharacter));
+	return *manager;
+}
+
+PlayableCharacterManager resize(PlayableCharacterManager* manager) {
+	manager->capacity *= 2;
+	PlayableCharacter* newCharacters = (PlayableCharacter*)calloc(manager->capacity, sizeof(PlayableCharacter));
+	for (size_t i = 0; i < manager->size; ++i) {
+		newCharacters[i] = manager->characters[i]; // копируем существующие элементы
+	}
+	free(manager->characters);
+	manager->characters = newCharacters;
+	return *manager;
+}
+
+void freePlayerManager(PlayableCharacterManager* manager) {
+	free(manager->characters);
+}
+
+
+PlayableCharacterManager addCharacter(PlayableCharacterManager* manager, PlayableCharacter* hero) {
+	if (manager->size == manager->capacity) {
+		resize(manager);
+	}
+	manager->characters[manager->size++] = *hero;
+	return *manager;
+}
+
+PlayableCharacterManager removeCharacter(PlayableCharacterManager* manager, size_t index) {
+	if (index < manager->size) {
+		// перемещаем последний элемент на место удаляемого
+		manager->characters[index] = manager->characters[manager->size - 1];
+		manager->size--;
+	}
+	return *manager;
+}
+
+PlayableCharacter getCharacter(PlayableCharacterManager* manager, size_t index) {
+	if (index < manager->size) {
+		return manager->characters[index];
+	}
+}
+
+size_t getSize(PlayableCharacterManager* manager) {
+	return manager->size;
+}
+
+PlayableCharacter SetStartItem(PlayableCharacter* hero) {
+	Item key = ItemCreate(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
+	AddToInventory(hero, key);
+
+	Item healthPotion = ItemCreate(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
+	AddToInventory(hero, healthPotion);
+
+
+	//Создание предметов и внесение их в инвентарь в зависимости от класса игрока
+
+	switch (hero->type.specialization) {
+	case(Warrior):
+		Item PalladinSword = ItemCreate(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
+		AddToInventory(hero, PalladinSword);
+		Item PalladinArmor = ItemCreate(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
+		AddToInventory(hero, PalladinArmor);
+		break;
+	case(Hunter):
+		Item AssassinDagger = ItemCreate(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
+		AddToInventory(hero, AssassinDagger);
+		Item HuntersBow = ItemCreate(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
+		AddToInventory(hero, HuntersBow);
+		Item HuntersKilt = ItemCreate(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
+		AddToInventory(hero, HuntersKilt);
+		break;
+	case(Sorcerer):
+		Item BasedStaff = ItemCreate(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
+		AddToInventory(hero, BasedStaff);
+		Item SorcerersRobe = ItemCreate(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
+		AddToInventory(hero, SorcerersRobe);
+		break;
+	}
+	return *hero;
+
+}
+
+PlayableCharacterManager update(PlayableCharacterManager* manager, PlayableCharacter* hero) {
+	for (size_t i = 0; i < getSize(manager); ++i) {
+		if (strcmp(manager->characters[i].type.name, hero->type.name) == 0) {
+			manager->characters[i] = *hero;
+			return *manager;
+		}
+	}
+
 }

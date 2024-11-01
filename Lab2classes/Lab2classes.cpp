@@ -154,6 +154,7 @@ public:
 	void removeCharacter(size_t index);
 	PlayableCharacter getCharacter(size_t index);
 	size_t getSize();
+	void update(PlayableCharacter* hero);
 };
 
 
@@ -204,6 +205,10 @@ int main()
 	cout << "Просмотр послебоевого инвентаря" << endl;
 	Hero.ShowInventory();
 
+	saves.update(&Hero);
+
+
+
 	PlayableCharacter hero2;
 	hero2.Type.ClassCreation();
 	hero2.inventory;
@@ -222,8 +227,10 @@ int main()
 		while (getchar() != '\n');
 	} while (choise<0||choise>saves.getSize());
 	choise--;
-	saves.getCharacter(choise).PrintStats();
-	saves.getCharacter(choise).ShowInventory();
+
+	PlayableCharacter character = saves.getCharacter(choise);
+	character.PrintStats();
+	character.ShowInventory();
 
 	delete[] Hero.Type.name;
 	delete[] hero2.Type.name;
@@ -498,5 +505,17 @@ void PlayableCharacter::SetStartItem() {
 		SorcerersRobe.setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
 		this->AddToInventory(BasedStuff); this->AddToInventory(SorcerersRobe);
 	}
+
+}
+
+void PlayableCharacterManager::update(PlayableCharacter* hero) {
+	for (size_t i = 0; i < this->getSize(); ++i) {
+		if (strcmp(this->characters[i].Type.name, hero->Type.name) == 0) {
+			this->characters[i] = *hero;
+			return;
+		}
+	}
+
+
 
 }
