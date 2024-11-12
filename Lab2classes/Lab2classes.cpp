@@ -60,8 +60,9 @@ enum EntityType {
 
 //Класс персонажа
 class CharacterClass {
+	
 public:
-	char* name;
+	string name;
 	Specialization specialization;//Класс
 	double HealthBar;//Здоровье
 	double Stamina;//Выносливость
@@ -71,7 +72,7 @@ public:
 
 	CharacterClass();
 	~CharacterClass();
-	void setCharacterClass(char* pName, Specialization spec,double health, double stamina, double mana, int spellCells, double damage );
+	void setCharacterClass(string pName, Specialization spec,double health, double stamina, double mana, int spellCells, double damage );
 	void ClassCreation();
 	
 
@@ -81,13 +82,13 @@ public:
 class Item {
 public:
 	ItemType itemType;//Тип предмета
-	char* Name;//Название
-	char* Description;//Краткое описание
+	string Name;//Название
+	string Description;//Краткое описание
 	int DropChance;//Шанс выпадения с NPC
 
 	Item();
 	~Item();
-	void setItem(ItemType itemtype, const char* name, const char* desc, int dropchance);
+	void setItem(ItemType itemtype, string name, string desc, int dropchance);
 
 };
 
@@ -100,12 +101,14 @@ public:
 
 	Inventory();
 	~Inventory();
+	bool removeItem(string itemName);
 	
 
 };
 
 //Играбельный персонаж
 class PlayableCharacter {
+	friend void manageInventory(PlayableCharacter& player, Item& item, bool add);
 public:
 	CharacterClass Type;
 	Inventory inventory;
@@ -123,7 +126,7 @@ public:
 //NPC
 class Entity {
 public:
-	char* Name;
+	string Name;
 	EntityType Type;//Тип NPC
 	bool Friendly;//Является ли он дружественным(1-да 0-нет)
 	double HealthBar;//Здоровье
@@ -133,7 +136,7 @@ public:
 
 	Entity();
 	~Entity();
-	void setEntity(const char* name, EntityType type, bool friendly, double health, double stamina, double mana, double damage);
+	void setEntity(string name, EntityType type, bool friendly, double health, double stamina, double mana, double damage);
 	void printEntity();
 	void GetDamaged(PlayableCharacter character);
 	void EntityDied(PlayableCharacter &Character, Item item);
@@ -144,8 +147,8 @@ public:
 class PlayableCharacterManager {
 private:
 	PlayableCharacter* characters;
-	size_t size;
-	size_t capacity;
+	static size_t size;
+	static size_t capacity;
 	void resize();
 public:
 	PlayableCharacterManager();
@@ -155,6 +158,9 @@ public:
 	PlayableCharacter getCharacter(size_t index);
 	size_t getSize();
 	void update(PlayableCharacter* hero);
+	static void printSize();
+	static void printCapacity();
+	void printFreeSaves();
 };
 
 
@@ -187,7 +193,7 @@ int main()
 
 	//создание предмета для выпадения
 	Item *money = new Item();
-	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 40);
+	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 100);
 
 
 	//процесс боя
@@ -209,19 +215,26 @@ int main()
 	saves.update(&Hero);
 
 
+	manageInventory(Hero, Hero.inventory.items[1], false);
+	Hero.ShowInventory();
+
 
 	PlayableCharacter hero2;
 	hero2.Type.ClassCreation();
 	hero2.inventory;
 	hero2.SetStartItem();
 	saves.addCharacter(hero2);
-	cout << "Количество персонажей: " << saves.getSize() << endl;
+	
+	saves.printSize();
+	saves.printCapacity();
+	saves.printFreeSaves();
 
 	for (size_t i = 0; i < saves.getSize(); ++i) {
 		cout<< saves.getCharacter(i).Type.name<<endl;
 	}
 
-	cout << "Введите номер персонажа для вывода статистики:\nВсего персонажей:"<<saves.getSize()<<endl;
+	cout << "Введите номер персонажа для вывода статистики:"<<endl;
+	saves.printSize();
 	int choise;
 	do {
 		cin >> choise;
@@ -243,9 +256,8 @@ CharacterClass::CharacterClass() {
 void CharacterClass::ClassCreation() {
 	int PlayerType;
 	puts("Введите имя:");
-	char* Name;
-	Name = new char[30];
-	fgets(Name, 30, stdin);
+	string Name;
+	getline(cin, Name);
 	cout << "Выберете класс персонажа: 1)Воин 2)Охотник 3)Колдун" << endl;
 	do {
 		cin >> PlayerType;
@@ -287,7 +299,7 @@ void CharacterClass::ClassCreation() {
 }
 
 
-void CharacterClass::setCharacterClass(char* pName, Specialization spec, double health, double stamina, double mana, int spellCells, double damage) {
+void CharacterClass::setCharacterClass(string pName, Specialization spec, double health, double stamina, double mana, int spellCells, double damage) {
 	name = pName;
 	specialization=spec;
     HealthBar=health;
@@ -315,10 +327,10 @@ Item::Item() {
 	DropChance = 0;
 }
 
-void Item::setItem(ItemType itemtype, const char* name, const char* desc, int dropchance) {
+void Item::setItem(ItemType itemtype, string name, string desc, int dropchance) {
 	itemType = itemtype;
-	Name = _strdup(name);
-	Description = _strdup(desc);
+	Name = name;
+	Description = desc;
 	DropChance = dropchance;
 }
 Item::~Item() {
@@ -363,8 +375,8 @@ Entity::Entity() {}
 
 Entity::~Entity() {}
 
-void Entity::setEntity(const char* name, EntityType type, bool friendly, double health, double stamina, double mana, double damage) {
-	Name = _strdup(name);
+void Entity::setEntity(string name, EntityType type, bool friendly, double health, double stamina, double mana, double damage) {
+	Name = name;
 	Type = type;
 	Friendly = friendly;
 	HealthBar = health;
@@ -407,16 +419,15 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 		int dropChance = (0 + rand() % 100 - 0 + 1);
 		if (dropChance <= item.DropChance) {
 			cout<< Name<<" Выронил: "<< item.Name<<endl;
-			cout<<"Подобрать??(1-да 2-нет)"<<endl;
+			cout<<"Подобрать??(1-нет 2-да)"<<endl;
 			int ch;
 			do {
 				cin>>ch;
 				while (getchar() != '\n');
 			} while (ch < 1 || ch>2);
-			if (ch == 1) {
-				Character.AddToInventory(item);
-			}
-			else return ;
+			ch--;
+			bool Ch = (bool)ch;
+			manageInventory(Character, item, Ch);
 		}
 		else {
 			cout<< Name<<" НИЧЕГО не выронил"<<endl;
@@ -426,9 +437,11 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 
 }
 
+size_t PlayableCharacterManager::size = 0;
+size_t PlayableCharacterManager::capacity = 10;
+
 PlayableCharacterManager::PlayableCharacterManager() {
-	size = 0;
-	capacity = 10;
+	
 	characters = new PlayableCharacter[capacity];
 }
 
@@ -522,10 +535,50 @@ void PlayableCharacter::SetStartItem() {
 
 void PlayableCharacterManager::update(PlayableCharacter* hero) {
 	for (size_t i = 0; i < this->getSize(); ++i) {
-		if (strcmp(this->characters[i].Type.name, hero->Type.name) == 0) {
+		if (this->characters[i].Type.name== hero->Type.name) {
 			this->characters[i] = *hero;
 			return;
 		}
 	}
 
+}
+void PlayableCharacterManager::printSize() {
+	cout << "Количество ваших играбельных персонажей: " << size << endl;
+}
+
+void PlayableCharacterManager::printCapacity() {
+	cout << "Колличество общих ячеек сохранения: " << capacity << endl;
+}
+void PlayableCharacterManager::printFreeSaves() {
+	cout << "Количество свободных ячеек сохранения: " << capacity - size << endl;
+}
+
+
+bool Inventory::removeItem(string itemName) {
+	for (int i = 0; i < ActiveSlots; ++i) {
+		if (items[i].Name==itemName) {
+			// Shift items left
+			for (int j = i; j < ActiveSlots - 1; ++j) {
+				items[j] = items[j + 1];
+			}
+			ActiveSlots--;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+void manageInventory(PlayableCharacter& player, Item& item, bool add) {
+	if (add) {
+		player.AddToInventory(item);
+	}
+	else {
+		if (player.inventory.removeItem(item.Name)) {
+			cout << "Предмет удалён! "<<endl;
+		}
+		else {
+			cout << "Предмет не найден!" << endl;
+		}
+	}
 }
