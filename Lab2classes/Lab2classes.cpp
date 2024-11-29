@@ -92,6 +92,57 @@ public:
 
 };
 
+class WeaponItem :public Item {
+private:
+	double damage;
+public:
+	WeaponItem();
+	~WeaponItem();
+	void setWeapon(ItemType itemtype, string name, string desc, int dropchance, double dmg);
+	WeaponItem operator++(){
+		damage++;
+		return *this;
+	}
+};
+
+class KeyItem :public Item {
+private:
+	int keyLevel;
+public:
+	KeyItem();
+	~KeyItem();
+	void setKey(ItemType itemtype, string name, string desc, int dropchance, int level);
+
+};
+
+class ArmorItem :public Item {
+private:
+	double defense;
+public:
+	ArmorItem();
+	ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def);
+	~ArmorItem();
+	void setArmor(ItemType itemtype, string name, string desc, int dropchance, double def);
+
+	ArmorItem operator + (ArmorItem* Armor2) {
+		double resultDefense=this->defense+Armor2->defense;
+		return ArmorItem(this->itemType, this->Name, this->Description, this->DropChance, resultDefense);
+
+	}
+};
+
+class ConsumableItem :public Item {
+private:
+	int luckbonus;
+	double hpRestor;
+public:
+	ConsumableItem();
+	~ConsumableItem();
+	void setConsumable(ItemType itemtype, string name, string desc, int dropchance, int luck, double bonushp);
+
+};
+
+
 
 //Инвентарь
 class Inventory {
@@ -120,6 +171,7 @@ public:
 	void AddToInventory(Item item);
 	void PlayerDamaged(double damage);
 	void SetStartItem();
+	
 };
 
 
@@ -195,7 +247,7 @@ int main()
 
 	manageInventory(Hero, Hero.inventory.items[1], false);
 	Hero.ShowInventory();
-
+	saves.update(&Hero);
 
 	PlayableCharacter hero2;
 	hero2.Type.ClassCreation();
@@ -341,6 +393,7 @@ void PlayableCharacter::ShowInventory() {
 		cout<<"  Тип: "<< ItemNames[item.itemType - 1]<<endl;
 		cout<<"  Название: "<< item.Name<<endl;
 		cout << "  Описание: "<< item.Description<<endl;
+		
 	}
 }
 
@@ -467,40 +520,40 @@ size_t PlayableCharacterManager::getSize(){
 
 void PlayableCharacter::SetStartItem() {
 	//создание базовых предметов
-	Item *key= new Item();
-	key->setItem(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0);
+	KeyItem *key= new KeyItem();
+	key->setKey(Key, "Башенный ключ", "Старый, потёртый ключ, открывающий дверь в Башню", 0.0, 10);
 	this->AddToInventory(*key);
 
-	Item *healthPotion=new Item();
-	healthPotion->setItem(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70);
+	ConsumableItem *healthPotion=new ConsumableItem();
+	healthPotion->setConsumable(Consumables, "Зелье жизни", "Маленьких пузырёк красной жидкости. Единоразово восстанавливает здоровье", 70,0,20);
 	this->AddToInventory(*healthPotion);
 
 	//распределение вещей в зависимости от "специализации"
 	if (this->Type.specialization == Warrior) {
-		Item *PalladinSword=new Item();
-		PalladinSword->setItem(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40);
-		Item *PalladinArmor = new Item();
-		PalladinArmor->setItem(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45);
+		WeaponItem *PalladinSword=new WeaponItem();
+		PalladinSword->setWeapon(Weapon, "Меч Палладина", "Меч, отливающий серебряным блеском. Отлично справляется с нечистью", 40,20);
+		ArmorItem *PalladinArmor = new ArmorItem();
+		PalladinArmor->setArmor(Armor, "Кираса Палладина", "Серебристая кираса с гербом Королевста", 45,20);
 		this->AddToInventory(*PalladinSword);
 		this->AddToInventory(*PalladinArmor);
 		delete PalladinSword;
 		delete PalladinArmor;
 	}
 	if (this->Type.specialization == Hunter) {
-		Item *AssassinDagger = new Item();
-		AssassinDagger->setItem(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40);
-		Item *HuntersBow = new Item();
-		HuntersBow->setItem(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50);
-		Item *HuntersKilt = new Item();
-		HuntersKilt->setItem(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55);
+		WeaponItem *AssassinDagger = new WeaponItem();
+		AssassinDagger->setWeapon(Weapon, "Кинжал Ассассина", "Клинок из чёрной стали, предназначеный для вероломных ударов в спину", 40, 10);
+		WeaponItem *HuntersBow = new WeaponItem();
+		HuntersBow->setWeapon(Weapon, "Лук Охотника", "Простой деревянный лук, ценный среди охотников за простоту и эффективность", 50,5);
+		ArmorItem *HuntersKilt = new ArmorItem();
+		HuntersKilt->setArmor(Armor, "Одеяние Охотника", "Лёгкая накидка королевских охотников. Пpостая и эргономичная, не сковывающая движения", 55,10);
 		this->AddToInventory(*AssassinDagger); this->AddToInventory(*HuntersBow); this->AddToInventory(*HuntersKilt);
 		delete AssassinDagger; delete HuntersBow; delete HuntersKilt;
 	}
 	if (this->Type.specialization == Sorcerer) {
-		Item *BasedStuff = new Item();
-		Item *SorcerersRobe = new Item();
-		BasedStuff->setItem(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33);
-		SorcerersRobe->setItem(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55);
+		WeaponItem *BasedStuff = new WeaponItem();
+		ArmorItem *SorcerersRobe = new ArmorItem();
+		BasedStuff->setWeapon(Weapon, "Посох Колдуна", "Обычный посох из дерева и камня души. Позволяет воплощать мысль в магию", 33,20);
+		SorcerersRobe->setArmor(Armor, "Роба Мага-Новичка", "Роба начинающего мага. Ходят легенты, что хранит в себе частичку магической силы", 55,2);
 		this->AddToInventory(*BasedStuff); this->AddToInventory(*SorcerersRobe);
 		delete BasedStuff; delete SorcerersRobe;
 	}
@@ -588,8 +641,8 @@ void CreateEntityAndFight(PlayableCharacter &Hero, Entity &Gobbo) {
 	Gobbo.printEntity();
 
 	//создание предмета для выпадения
-	Item* money = new Item();
-	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 100);
+	ConsumableItem* money = new ConsumableItem();
+	money->setConsumable(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 100,35,0);
 
 
 	//процесс боя
@@ -605,3 +658,33 @@ void CreateEntityAndFight(PlayableCharacter &Hero, Entity &Gobbo) {
 
 }
 
+void KeyItem::setKey(ItemType itemtype, string name, string desc, int dropchance, int level) {
+	keyLevel = level;
+	setItem(itemtype, name, desc,dropchance);
+}
+
+void WeaponItem::setWeapon(ItemType itemtype, string name, string desc, int dropchance, double dmg) {
+	damage = dmg;
+	setItem(itemtype, name, desc, dropchance);
+}
+void ArmorItem::setArmor(ItemType itemtype, string name, string desc, int dropchance, double def) {
+	defense = def;
+	setItem(itemtype, name, desc, dropchance);
+}
+void ConsumableItem::setConsumable(ItemType itemtype, string name, string desc, int dropchance, int luck, double bonushp) {
+	luckbonus = luck;
+	hpRestor = bonushp;
+	setItem(itemtype, name, desc, dropchance);
+}
+ArmorItem::ArmorItem() {}
+
+ArmorItem::ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def)
+{
+}
+ArmorItem::~ArmorItem() {}
+WeaponItem::WeaponItem() {}
+WeaponItem::~WeaponItem() {}
+KeyItem::KeyItem() {}
+KeyItem::~KeyItem() {}
+ConsumableItem::ConsumableItem() {}
+ConsumableItem::~ConsumableItem() {}
