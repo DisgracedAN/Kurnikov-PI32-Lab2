@@ -164,6 +164,12 @@ public:
 };
 
 
+void ShowStatistic(PlayableCharacter& Character, PlayableCharacterManager& saves);
+
+void ShowHeroInventoryTest(PlayableCharacter& Hero);
+
+void CreateEntityAndFight(PlayableCharacter& Hero, Entity& Gobbo);
+
 int main()
 {
 	setlocale(LC_ALL, "Rus");
@@ -171,41 +177,13 @@ int main()
 	SetConsoleOutputCP(1251);
 	PlayableCharacterManager saves;
 	PlayableCharacter Hero;
-	Hero.Type.ClassCreation();
-	saves.addCharacter(Hero);
-
-	cout << "Просмотр статистики после создания"<<endl;
+	ShowStatistic(Hero, saves);
 	
-	Hero.PrintStats();
-	Hero.inventory;
-
-	Hero.SetStartItem();
-
-	
-	cout << "Просмотр инвентаря" <<endl ;
-	Hero.ShowInventory();
+	ShowHeroInventoryTest(Hero);
 
 	//создание врага
 	Entity Gobbo;
-	Gobbo.setEntity("Гоблин-Воин", monster, false, 50, 2, 3, 5);
-	cout << "Просмотр информации о NPC" <<endl ;
-	Gobbo.printEntity();
-
-	//создание предмета для выпадения
-	Item *money = new Item();
-	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 100);
-
-
-	//процесс боя
-	do {
-		Gobbo.GetDamaged(Hero);
-		if (Gobbo.HealthBar <= 0) break;
-		Hero.PlayerDamaged(Gobbo.Damage);
-		if (Hero.Type.HealthBar <= 0) break;
-	} while (Gobbo.HealthBar != 0||Hero.Type.HealthBar!=0);
-
-	Gobbo.EntityDied(Hero, *money);
-	delete money;
+	CreateEntityAndFight(Hero, Gobbo);
 
 	cout << "Просмотр послебоевой статистики" <<endl ;
 	Hero.PrintStats();
@@ -582,3 +560,48 @@ void manageInventory(PlayableCharacter& player, Item& item, bool add) {
 		}
 	}
 }
+
+void ShowStatistic(PlayableCharacter &Character, PlayableCharacterManager &saves) {
+	Character.Type.ClassCreation();
+	saves.addCharacter(Character);
+
+	cout << "Просмотр статистики после создания" << endl;
+
+	Character.PrintStats();
+
+}
+
+void ShowHeroInventoryTest(PlayableCharacter& Hero) {
+
+	Hero.inventory;
+
+	Hero.SetStartItem();
+
+
+	cout << "Просмотр инвентаря" << endl;
+	Hero.ShowInventory();
+}
+
+void CreateEntityAndFight(PlayableCharacter &Hero, Entity &Gobbo) {
+	Gobbo.setEntity("Гоблин-Воин", monster, false, 50, 2, 3, 5);
+	cout << "Просмотр информации о NPC" << endl;
+	Gobbo.printEntity();
+
+	//создание предмета для выпадения
+	Item* money = new Item();
+	money->setItem(Consumables, "Монетка", "Золотая монетка, блестящая на солнце.", 100);
+
+
+	//процесс боя
+	do {
+		Gobbo.GetDamaged(Hero);
+		if (Gobbo.HealthBar <= 0) break;
+		Hero.PlayerDamaged(Gobbo.Damage);
+		if (Hero.Type.HealthBar <= 0) break;
+	} while (Gobbo.HealthBar != 0 || Hero.Type.HealthBar != 0);
+
+	Gobbo.EntityDied(Hero, *money);
+	delete money;
+
+}
+
