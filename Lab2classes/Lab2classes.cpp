@@ -93,22 +93,29 @@ public:
 };
 
 class WeaponItem :public Item {
-private:
-	double damage;
+
+	
 public:
+	double damage;
 	WeaponItem();
 	~WeaponItem();
 	void setWeapon(ItemType itemtype, string name, string desc, int dropchance, double dmg);
+	void printWeaponStats() {
+		cout << "  Тип: " << ItemNames[1] << endl;
+		cout << "  Название: " << Name << endl;
+		cout << "  Описание: " << Description << endl;
+		cout << "  Показатель урона:  " << damage << endl;
+	}
 	WeaponItem operator++(){
-		damage++;
+		damage+=5;
 		return *this;
 	}
 };
 
 class KeyItem :public Item {
-private:
-	int keyLevel;
+
 public:
+	int keyLevel;
 	KeyItem();
 	~KeyItem();
 	void setKey(ItemType itemtype, string name, string desc, int dropchance, int level);
@@ -116,30 +123,47 @@ public:
 };
 
 class ArmorItem :public Item {
-private:
-	double defense;
+
 public:
+	double defense;
 	ArmorItem();
 	ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def);
 	~ArmorItem();
 	void setArmor(ItemType itemtype, string name, string desc, int dropchance, double def);
 
-	ArmorItem operator + (ArmorItem* Armor2) {
-		double resultDefense=this->defense+Armor2->defense;
-		return ArmorItem(this->itemType, this->Name, this->Description, this->DropChance, resultDefense);
-
+	void printArmStats() {
+		cout << "  Тип: " << ItemNames[2] << endl;
+		cout << "  Название: " << Name << endl;
+		cout << "  Описание: " << Description << endl;
+		cout << "  Показатель защиты:  " << defense << endl;
 	}
+
+	ArmorItem operator+(ArmorItem& arm);
 };
 
 class ConsumableItem :public Item {
-private:
+
+public:
 	int luckbonus;
 	double hpRestor;
-public:
 	ConsumableItem();
 	~ConsumableItem();
 	void setConsumable(ItemType itemtype, string name, string desc, int dropchance, int luck, double bonushp);
 
+	void printConsumablesStats() {
+		cout << "  Тип: " << ItemNames[3] << endl;
+		cout << "  Название: " << Name << endl;
+		cout << "  Описание: " << Description << endl;
+		cout << "  Показатель бонусной удачи:  " << luckbonus << endl;
+		cout << "  Количество восстанавливаемого здоровья:  " << hpRestor << endl;
+
+	}
+	ConsumableItem operator++(int) {
+		ConsumableItem tmp = *this;
+		this->luckbonus += 5;
+		this->hpRestor += 5;
+		return tmp;
+	}
 };
 
 
@@ -222,6 +246,8 @@ void ShowHeroInventoryTest(PlayableCharacter& Hero);
 
 void CreateEntityAndFight(PlayableCharacter& Hero, Entity& Gobbo);
 
+void operatorsTests();
+
 int main()
 {
 	setlocale(LC_ALL, "Rus");
@@ -275,6 +301,9 @@ int main()
 	PlayableCharacter character = saves.getCharacter(choise);
 	character.PrintStats();
 	character.ShowInventory();
+
+	cout << "Тест операторов: " << endl;
+	operatorsTests();
 	
 }
 
@@ -688,3 +717,51 @@ KeyItem::KeyItem() {}
 KeyItem::~KeyItem() {}
 ConsumableItem::ConsumableItem() {}
 ConsumableItem::~ConsumableItem() {}
+
+
+ArmorItem ArmorItem::operator+(ArmorItem& arm) {
+	ArmorItem tmp;
+	tmp.itemType = this->itemType;
+	tmp.Name = this->Name;
+	tmp.Description = this->Description;
+	tmp.DropChance = this->DropChance;
+	tmp.defense =this->defense+ arm.defense;
+	return tmp;
+}
+
+
+void operatorsTests() {
+	cout << "Тест: Броня(оператор +)" << endl;
+	ArmorItem BerserkersArmor;
+	cout << "До: " << endl;
+	BerserkersArmor.setArmor(Armor, "Броня Берсерка", "Жуткая, чёрная броня, покрытая кровью. Говорят, владельцы такой брони безжалостны к врагу", 60, 52);
+	BerserkersArmor.printArmStats();
+	ArmorItem KnightArmor;
+	KnightArmor.setArmor(Armor, "Рыцарские латы", "Обычные стальные латы королевских рыцарей", 60, 20);
+	ArmorItem Arm = BerserkersArmor + KnightArmor;
+	
+	cout << "После: " << endl;
+	Arm.printArmStats();
+
+	cout << "Тест: Оружие(оператор ++ префиксный)" << endl;
+	WeaponItem Knife;
+	Knife.setWeapon(Weapon, "Нож", "Обычный крестьянский нож, есть в каждой образцовой семье", 20, 20);
+	cout<<"До: " << endl;
+	Knife.printWeaponStats();
+	++Knife;
+	cout << "После: " << endl;
+	Knife.printWeaponStats();
+
+	cout << "Тест: Расходники(оператор ++ постфиксный)" << endl;
+
+	ConsumableItem flask;
+	flask.setConsumable(Consumables, "Фляжка с необычной жидкостью", "Фляжка с необычной пахучей жидностью. Обладает неизвестным эффектом", 10, 20, 30);
+
+	cout << "До: " << endl;
+	flask.printConsumablesStats();
+	flask++;
+	cout << "После: " << endl;
+	flask.printConsumablesStats();
+
+}
+
