@@ -89,6 +89,22 @@ public:
 	Item();
 	~Item();
 	void setItem(ItemType itemtype, string name, string desc, int dropchance);
+	Item& operator=(const Item& other) {
+		if (this == &other) return *this; // самоприсваивание
+
+		Name = other.Name;
+		itemType = other.itemType;
+		DropChance = other.DropChance;
+
+		Description = other.Description;
+		
+		return *this;
+	}
+
+	virtual string getInfo() const { // Виртуальная функция
+		return "Название предмета: " + Name + "\nТип предмета: " + to_string(static_cast<int>(itemType)) + "\nОписание: " + Description +
+			"\nШанс выпадения: " + to_string(DropChance) + "\n";
+	}
 
 };
 
@@ -110,6 +126,16 @@ public:
 		damage+=5;
 		return *this;
 	}
+
+	WeaponItem& operator=(const WeaponItem& other) {
+		if (this == &other) return *this; // самоприсваивание
+		Item::operator=(other); // вызываем оператор присваивания базового класса
+		damage = other.damage;
+		return *this;
+	}
+	string getInfo() const override {
+		return Item::getInfo() + "Урон: " + to_string(damage)+"\n";
+	}
 };
 
 class KeyItem :public Item {
@@ -119,6 +145,9 @@ public:
 	KeyItem();
 	~KeyItem();
 	void setKey(ItemType itemtype, string name, string desc, int dropchance, int level);
+	string getInfo() const override {
+		return Item::getInfo() + "Уровень ключа: " + to_string(keyLevel) + "\n";
+	}
 
 };
 
@@ -139,6 +168,9 @@ public:
 	}
 
 	ArmorItem operator+(ArmorItem& arm);
+	string getInfo() const override {
+		return Item::getInfo() + "Показатель защиты: " + to_string(defense) + "\n";
+	}
 };
 
 class ConsumableItem :public Item {
@@ -164,6 +196,9 @@ public:
 		this->hpRestor += 5;
 		return tmp;
 	}
+	string getInfo() const override {
+		return Item::getInfo() + "Бонус к удаче: " + to_string(luckbonus)+"\nВосстановление Здоровья: " +to_string(hpRestor) + "\n";
+	}
 };
 
 
@@ -171,12 +206,13 @@ public:
 //Инвентарь
 class Inventory {
 public:
-	Item items[100];//Массив предметов
+	Item items[10];//Массив предметов
 	int ActiveSlots;//Свободные слоты
 
 	Inventory();
 	~Inventory();
 	bool removeItem(string itemName);
+	void addItem(Item item);
 	
 
 };
@@ -248,6 +284,8 @@ void CreateEntityAndFight(PlayableCharacter& Hero, Entity& Gobbo);
 
 void operatorsTests();
 
+void doubleMassText();
+
 int main()
 {
 	setlocale(LC_ALL, "Rus");
@@ -291,6 +329,7 @@ int main()
 
 	cout << "Введите номер персонажа для вывода статистики:"<<endl;
 	saves.printSize();
+	saves.printCapacity();
 	int choise;
 	do {
 		cin >> choise;
@@ -304,6 +343,7 @@ int main()
 
 	cout << "Тест операторов: " << endl;
 	operatorsTests();
+	doubleMassText();
 	
 }
 
@@ -405,12 +445,11 @@ Inventory::~Inventory() {
 }
 
 void PlayableCharacter::AddToInventory(Item item) {
-	if (inventory.ActiveSlots < 100) {
-		inventory.items[inventory.ActiveSlots] = item;
-		inventory.ActiveSlots++;
+	try {
+		inventory.addItem(item);
 	}
-	else {
-		printf("Инвентарь полон!\n");
+	catch (const std::overflow_error& e) {
+		std::cerr << "Ошибка в процессе добавление предмета: " << e.what() << endl;
 	}
 }
 
@@ -709,6 +748,7 @@ ArmorItem::ArmorItem() {}
 
 ArmorItem::ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def)
 {
+
 }
 ArmorItem::~ArmorItem() {}
 WeaponItem::WeaponItem() {}
@@ -763,5 +803,51 @@ void operatorsTests() {
 	cout << "После: " << endl;
 	flask.printConsumablesStats();
 
+	cout << "Проверка перегружения оператора присваивания" << endl;
+
+	WeaponItem HexersStaff;
+	HexersStaff.setWeapon(Weapon, "Посох Мага Порчи", "Такие жуткие, гротескные посохи носили маги школы порчи.", 20, 41);
+	HexersStaff.printWeaponStats();
+	cout << "" << endl;
+	HexersStaff = Knife;
+	HexersStaff.printWeaponStats();
+
+	Item* ItemPtr;
+	ItemPtr = &BerserkersArmor;
+	cout << ItemPtr->getInfo();
+	ItemPtr = &flask;
+	cout << ItemPtr->getInfo();
+
 }
 
+void Inventory::addItem(Item item) {
+	if (ActiveSlots > 100)
+		throw std::overflow_error("Инвентарь полон!");
+	items[ActiveSlots] = item;
+	ActiveSlots++;
+}
+
+void doubleMassText() {
+	Item itemMas[2][2];
+	WeaponItem Sword;
+	Sword.setWeapon(Weapon, "Меч", "Простой железный меч", 20, 12);
+	WeaponItem Bow;
+	Bow.setWeapon(Weapon, "Лук", "Композитный лук", 15, 13);
+	WeaponItem Knife;
+	Knife.setWeapon(Weapon, "Нож", "Обычный крестьянский нож, есть в каждой образцовой семье", 20, 20);
+	WeaponItem HexersStaff;
+	HexersStaff.setWeapon(Weapon, "Посох Мага Порчи", "Такие жуткие, гротескные посохи носили маги школы порчи.", 20, 41);
+
+
+	itemMas[0][0] = Sword;
+	itemMas[0][1] = Bow;
+	itemMas[1][0] = Knife;
+	itemMas[1][1] = HexersStaff;
+
+	for (int i = 0;i < 2;i++) {
+		for (int j = 0;j < 2;j++) {
+			cout<<itemMas[i][j].getInfo()<<endl;
+		}
+	}
+
+}
