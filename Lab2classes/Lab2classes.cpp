@@ -58,6 +58,13 @@ enum EntityType {
 
 };
 
+class InteractableObject {
+public:
+	virtual ~InteractableObject() {}
+	virtual void interact() = 0;
+	virtual string getName() const = 0;
+};
+
 //Класс персонажа
 class CharacterClass {
 	
@@ -79,14 +86,27 @@ public:
 };
 
 //Предмет
-class Item {
-public:
-	ItemType itemType;//Тип предмета
+class Item:public InteractableObject {
+
+	friend ostream& operator<<(ostream& os, const Item& item) {
+		os << "Название:" << item.Name << endl;
+		os << "Описание: " << item.Description << endl;
+		os << "Шанс выпадения: " << item.DropChance << endl;
+		return os;
+	}
+protected:
+	
 	string Name;//Название
 	string Description;//Краткое описание
 	int DropChance;//Шанс выпадения с NPC
 
+public:
+	ItemType itemType;//Тип предмета
 	Item();
+	Item(ItemType itemtype, string name, string desc, int dropchance) {
+		this->setItem(itemtype, name, desc, dropchance);
+
+	}
 	~Item();
 	void setItem(ItemType itemtype, string name, string desc, int dropchance);
 	Item& operator=(const Item& other) {
@@ -105,15 +125,38 @@ public:
 		return "Название предмета: " + Name + "\nТип предмета: " + to_string(static_cast<int>(itemType)) + "\nОписание: " + Description +
 			"\nШанс выпадения: " + to_string(DropChance) + "\n";
 	}
+	string getName() {
+		return Name;
+	}
+	string getDescription() {
+		return Description;
+	}
+	int getDropChance() {
+		return DropChance;
+	}
+	void interact() override {
+		cout << "You picked up " << Name << "!" << endl;
+	}
 
+	string getName() const override {
+		return Name;
+	}
 };
 
 class WeaponItem :public Item {
+	friend ostream& operator<<(ostream& os, const WeaponItem& item) {
+		os << static_cast<const Item &>(item) << endl;
+		os << "Показатель урона: " << item.damage << endl;
+		return os;
+	}
 
 	
 public:
 	double damage;
 	WeaponItem();
+	WeaponItem(ItemType itemtype, string name, string desc, int dropchance, double dmg):Item( itemtype, name, desc,  dropchance) {
+		this->damage = dmg;
+	}
 	~WeaponItem();
 	void setWeapon(ItemType itemtype, string name, string desc, int dropchance, double dmg);
 	void printWeaponStats() {
@@ -140,9 +183,17 @@ public:
 
 class KeyItem :public Item {
 
+	friend ostream& operator<<(ostream& os, const KeyItem& item) {
+		os << static_cast<const Item&>(item) << endl;
+		os << "Уровень ключа: " << item.keyLevel << endl;
+		return os;
+	}
 public:
 	int keyLevel;
 	KeyItem();
+	KeyItem(ItemType itemtype, string name, string desc, int dropchance, int KeyLevel):Item(itemtype,  name,  desc,  dropchance) {
+		this->keyLevel = KeyLevel;
+	}
 	~KeyItem();
 	void setKey(ItemType itemtype, string name, string desc, int dropchance, int level);
 	string getInfo() const override {
@@ -152,11 +203,19 @@ public:
 };
 
 class ArmorItem :public Item {
+	friend ostream& operator<<(ostream& os, const ArmorItem& item) {
+		os << static_cast<const Item&>(item) << endl;
+		os << "Показатель защиты: " << item.defense << endl;
+		return os;
+	}
 
 public:
 	double defense;
 	ArmorItem();
-	ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def);
+	ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def) :Item(itemtype,  name, desc,  dropchance) {
+		this->defense = def;
+	}
+
 	~ArmorItem();
 	void setArmor(ItemType itemtype, string name, string desc, int dropchance, double def);
 
@@ -174,11 +233,20 @@ public:
 };
 
 class ConsumableItem :public Item {
-
+	friend ostream& operator<<(ostream& os, const ConsumableItem& item) {
+		os << static_cast<const Item&>(item) << endl;
+		os << "Восстановление здоровья от использования: " << item.hpRestor << endl;
+		os << "Бонус к удаче: " << item.luckbonus << endl;
+		return os;
+	}
 public:
 	int luckbonus;
 	double hpRestor;
 	ConsumableItem();
+	ConsumableItem(ItemType itemtype, string name, string desc, int dropchance, int luck, double bonushp) :Item(itemtype, name, desc,  dropchance) {
+		this->luckbonus = luck;
+		this->hpRestor = bonushp;
+	}
 	~ConsumableItem();
 	void setConsumable(ItemType itemtype, string name, string desc, int dropchance, int luck, double bonushp);
 
@@ -197,7 +265,7 @@ public:
 		return tmp;
 	}
 	string getInfo() const override {
-		return Item::getInfo() + "Бонус к удаче: " + to_string(luckbonus)+"\nВосстановление Здоровья: " +to_string(hpRestor) + "\n";
+		return "Бонус к удаче: " + to_string(luckbonus)+"\nВосстановление Здоровья: " +to_string(hpRestor) + "\n";
 	}
 };
 
@@ -457,10 +525,12 @@ void PlayableCharacter::ShowInventory() {
 	cout<<"Содержимое инвентаря"<<endl;
 	for (int i = 0; i < inventory.ActiveSlots; i++) {
 		Item item = inventory.items[i];
+		string name = item.getName();
+		string desc = item.getDescription();
 		cout << "Предмет: " << i + 1 << endl;
 		cout<<"  Тип: "<< ItemNames[item.itemType - 1]<<endl;
-		cout<<"  Название: "<< item.Name<<endl;
-		cout << "  Описание: "<< item.Description<<endl;
+		cout<<"  Название: "<< name<<endl;
+		cout << "  Описание: "<< desc<<endl;
 		
 	}
 }
@@ -516,8 +586,10 @@ void Entity::EntityDied(PlayableCharacter &Character, Item item) {
 		cout<<Name<<" погиб!"<<endl;
 		// Выпадение предмета
 		int dropChance = (0 + rand() % 100 - 0 + 1);
-		if (dropChance <= item.DropChance) {
-			cout<< Name<<" Выронил: "<< item.Name<<endl;
+		int DropChance = item.getDropChance();
+		string Name = item.getName();
+		if (dropChance <= DropChance) {
+			cout<< Name<<" Выронил: "<< Name<<endl;
 			cout<<"Подобрать??(1-нет 2-да)"<<endl;
 			int ch;
 			do {
@@ -655,7 +727,8 @@ void PlayableCharacterManager::printFreeSaves() {
 
 bool Inventory::removeItem(string itemName) {
 	for (int i = 0; i < ActiveSlots; ++i) {
-		if (items[i].Name==itemName) {
+		string Name = items[i].getName();
+		if (Name==itemName) {
 			// Shift items left
 			for (int j = i; j < ActiveSlots - 1; ++j) {
 				items[j] = items[j + 1];
@@ -669,11 +742,13 @@ bool Inventory::removeItem(string itemName) {
 
 
 void manageInventory(PlayableCharacter& player, Item& item, bool add) {
+	string Name = item.getName();
+
 	if (add) {
 		player.AddToInventory(item);
 	}
 	else {
-		if (player.inventory.removeItem(item.Name)) {
+		if (player.inventory.removeItem(Name)) {
 			cout << "Предмет удалён! "<<endl;
 		}
 		else {
@@ -746,10 +821,7 @@ void ConsumableItem::setConsumable(ItemType itemtype, string name, string desc, 
 }
 ArmorItem::ArmorItem() {}
 
-ArmorItem::ArmorItem(ItemType itemtype, string name, string desc, int dropchance, double def)
-{
 
-}
 ArmorItem::~ArmorItem() {}
 WeaponItem::WeaponItem() {}
 WeaponItem::~WeaponItem() {}
@@ -803,20 +875,40 @@ void operatorsTests() {
 	cout << "После: " << endl;
 	flask.printConsumablesStats();
 
+	cout << "ООП: Наследование и Полиморфизм" << endl;
+
 	cout << "Проверка перегружения оператора присваивания" << endl;
 
 	WeaponItem HexersStaff;
 	HexersStaff.setWeapon(Weapon, "Посох Мага Порчи", "Такие жуткие, гротескные посохи носили маги школы порчи.", 20, 41);
 	HexersStaff.printWeaponStats();
-	cout << "" << endl;
+	cout << "После присвоения:" << endl;
 	HexersStaff = Knife;
 	HexersStaff.printWeaponStats();
+
+	cout << "" << endl;
+	cout << "Вирт Функция" << endl;
 
 	Item* ItemPtr;
 	ItemPtr = &BerserkersArmor;
 	cout << ItemPtr->getInfo();
 	ItemPtr = &flask;
 	cout << ItemPtr->getInfo();
+
+	cout << "Конструкторы: " << endl;
+	ArmorItem Veil(Armor, "Лунная Вуаль", "Вуаль колдунов башни луны, что усиливает ману владельца", 20, 41);
+	Item* ptr;
+	ptr = &Veil;
+	cout << ptr->getInfo();
+
+	cout << "" << endl;
+	cout << "Перегрузка оператора <<" << endl;
+	WeaponItem PyromancerFlame(Weapon, "Пиромантическое пламя","Пламя пиромантии, взывающее к искусству пламени", 15,45);
+
+	cout << "" << endl;
+	cout << "Использование абстрактного класса: " << endl;
+	PyromancerFlame.interact();
+
 
 }
 
